@@ -4,10 +4,11 @@ import math
 import mathutils
 import numpy as np
 import requests
+import bpy.ops as o
 
 bm = bmesh.new()
 
-# function to print output to console
+# prints output to console
 def print(data):
     for window in bpy.context.window_manager.windows:
         screen = window.screen
@@ -16,9 +17,21 @@ def print(data):
                 override = {'window': window, 'screen': screen, 'area': area}
                 bpy.ops.console.scrollback_append(override, text=str(data), type="OUTPUT")
 
+#clears
+def objclear():
+  for obj in bpy.context.scene.objects:
+    if obj.type == 'MESH':
+      obj.select = True
+    else:
+      obj.select = False
+      o.object.delete()
+        
 #testing print on a get
 response = requests.get('https://google.com/')
 print(response.status_code)
+
+#clear everything to start fresh
+objclear()
 
 rStep = 6
 maxR = 4.0
