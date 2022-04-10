@@ -30,9 +30,6 @@ def objclear():
 response = requests.get('https://google.com/')
 print(response.status_code)
 
-#clear everything to start fresh
-objclear()
-
 rStep = 6
 maxR = 4.0
 minR = 0.5
