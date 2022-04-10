@@ -25,9 +25,8 @@ if __name__ == '__main__':
 
     trackNames, trackIds = get_track(sp, input('Album id: '))
 
-    # TODO: use pandas to csv
+    res = sp.audio_features(trackIds)
+    df = pd.DataFrame.from_dict(res)
 
-    with open('result.txt', 'w') as f:
-        res = sp.audio_features(trackIds)
-        for trackFea in res:
-            f.write(str(trackFea)+'\n')
+    df.insert(0, 'trackname', trackNames)
+    df.to_csv('album.csv')
