@@ -3,8 +3,22 @@ import bmesh
 import math
 import mathutils
 import numpy as np
+import requests
 
 bm = bmesh.new()
+
+# function to print output to console
+def print(data):
+    for window in bpy.context.window_manager.windows:
+        screen = window.screen
+        for area in screen.areas:
+            if area.type == 'CONSOLE':
+                override = {'window': window, 'screen': screen, 'area': area}
+                bpy.ops.console.scrollback_append(override, text=str(data), type="OUTPUT")
+
+#testing print on a get
+response = requests.get('https://google.com/')
+print(response.status_code)
 
 rStep = 6
 maxR = 4.0
