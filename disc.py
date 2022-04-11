@@ -7,6 +7,19 @@ import numpy as np
 import requests
 # Authors: Eric, Taishan, Grayson
 
+rStep = 6
+maxR = 4.0
+minR = 0.5
+maxH = 1
+bottomH = 0.3
+segCount = 10
+
+#track values
+valence = 0.9 #range: 0.0 - 1.0
+energy = 0 #range: 0.0 - 1.0
+tempo = 0 #range: valid BPM rates
+title = "title"
+
 # prints output to console
 def print(data):
     for window in bpy.context.window_manager.windows:
@@ -65,20 +78,11 @@ response = requests.get('https://google.com/')
 print(response.status_code)
 
 
+
+
+
+
 bm = bmesh.new()
-
-rStep = 6
-maxR = 4.0
-minR = 0.5
-maxH = 1
-bottomH = 0.3
-segCount = 10
-
-#track values
-valence = 0.9
-energy = 0
-tempo = 0
-title = "title"
 
 vertsList = []
 
