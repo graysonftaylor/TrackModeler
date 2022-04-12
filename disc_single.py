@@ -18,12 +18,13 @@ H1 = 0.2
 
 rStep = 6
 
-loudness = -4.843
-tempo = 200
-duration = 249627
-energy = 0.3
-valence = 0.567
-danceability = 0.617
+loudness = -4.843 # [-10, 0]
+tempo = 100
+duration = 249627 # < MAX_DURATION
+energy = 0.8 # [0, 1]
+valence = 0.567 # Not used now
+danceability = 0.617 # Not used now
+trackName = 'Track'
 
 
 def outerRing(bm, ring1_d, ring1_u, ring2_d, ring2_u):
@@ -70,7 +71,7 @@ def waves(bm):
     pointCnt = int(np.ceil(tempo / 8))
 
     thetaList = np.linspace(0, maxAng, pointCnt)
-    
+
     print(pointCnt)
 
     HList = np.zeros((rStep, pointCnt))
@@ -85,18 +86,21 @@ def waves(bm):
 
     rList = np.linspace(R0+0.1, R1-0.2, rStep)
     fan = int(np.floor(pointCnt * (duration / MAX_DURATION)))
-    
+
     print(fan, duration / MAX_DURATION)
+
+    baseCircles = []
+
+    for i in range(rStep):
+        tBaseCircle = bmesh.ops.create_circle(
+            bm, segments=pointCnt, radius=rList[i])['verts'][:fan+1]
+        bmesh.ops.translate(bm, verts=tBaseCircle, vec=(0, 0, H1))
+        baseCircles.append(tBaseCircle)
 
     baseCircleOut = bmesh.ops.create_circle(
         bm, segments=pointCnt, radius=R1)['verts'][:fan+1]
 
     bmesh.ops.translate(bm, verts=baseCircleOut, vec=(0, 0, H1))
-
-    baseCircleIn = bmesh.ops.create_circle(
-        bm, segments=pointCnt, radius=R0+0.1)['verts'][:fan+1]
-
-    bmesh.ops.translate(bm, verts=baseCircleIn, vec=(0, 0, H1))
 
     circles = []
 
@@ -116,11 +120,17 @@ def waves(bm):
 
     for i in range(fan):
         bm.faces.new([circles[0][i], circles[0][i+1],
-                      baseCircleIn[i+1], baseCircleIn[i]])
+                      baseCircles[0][i+1], baseCircles[0][i]])
         bm.faces.new([circles[rStep-1][i], circles[rStep-1][i+1],
                       baseCircleOut[i+1], baseCircleOut[i]])
-    
-    
+
+    for i in range(rStep-1):
+        bm.faces.new([circles[i][0], circles[i+1][0],
+                      baseCircles[i+1][0], baseCircles[i][0]])
+        bm.faces.new([circles[i][fan], circles[i+1][fan],
+                      baseCircles[i+1][fan], baseCircles[i][fan]])
+    bm.faces.new([circles[rStep-1][0], baseCircleOut[0], baseCircles[rStep-1][0]])    
+    bm.faces.new([circles[rStep-1][fan], baseCircleOut[fan], baseCircles[rStep-1][fan]])
 
 
 def waves2(bm):
@@ -158,6 +168,20 @@ def waves2(bm):
         for i in range(fan-1):
             bm.faces.new([circles[r][i], circles[r][i+1],
                          circles[r+1][i+1], circles[r+1][i]])
+
+def addTitle():
+    # Text
+    font_curve = bpy.data.curves.new(type="FONT", name="Font Curve")
+    font_curve.body = trackName
+    font_obj = bpy.data.objects.new(name="Font Object", object_data=font_curve)
+    font_obj.data.extrude = 0.1
+    
+    fontAng = np.pi * (duration / MAX_DURATION - 1/2)
+    font_obj.location = (np.cos(fontAng)*(R0+0.4), np.sin(fontAng)*(R0+0.1), H0+0.05)
+    font_obj.rotation_euler = (0, 0, fontAng)
+
+    
+    bpy.context.scene.collection.objects.link(font_obj)
 
 
 if __name__ == '__main__':
@@ -209,5 +233,4 @@ if __name__ == '__main__':
     obj = bpy.data.objects.new("Object", me)
     bpy.context.collection.objects.link(obj)
 
-    # Text
-    # bpy.ops.object.text_add()
+    addTitle()
