@@ -18,12 +18,13 @@ H1 = 0.2
 
 rStep = 6
 
-loudness = -4.843 # [-10, 0]
-tempo = 180
-duration = 189627 # < MAX_DURATION
-energy = 0.6 # [0, 1]
-valence = 0.567 # Not used now
-danceability = 0.617 # Not used now
+loudness = -4.843  # [-10, 0], for wave base
+tempo = 180 # [90, 360], for wave freq
+duration = 200000  # < MAX_DURATION, for outer ring
+energy = 0.6  # [0, 1], for wave amps
+valence = 0.3  # For edge decoration
+
+danceability = 0.617  # Not used now
 trackName = 'Track'
 
 
@@ -129,8 +130,10 @@ def waves(bm):
                       baseCircles[i+1][0], baseCircles[i][0]])
         bm.faces.new([circles[i][fan], circles[i+1][fan],
                       baseCircles[i+1][fan], baseCircles[i][fan]])
-    bm.faces.new([circles[rStep-1][0], baseCircleOut[0], baseCircles[rStep-1][0]])    
-    bm.faces.new([circles[rStep-1][fan], baseCircleOut[fan], baseCircles[rStep-1][fan]])
+    bm.faces.new([circles[rStep-1][0], baseCircleOut[0],
+                 baseCircles[rStep-1][0]])
+    bm.faces.new([circles[rStep-1][fan], baseCircleOut[fan],
+                 baseCircles[rStep-1][fan]])
 
 
 def waves2(bm):
@@ -169,19 +172,62 @@ def waves2(bm):
             bm.faces.new([circles[r][i], circles[r][i+1],
                          circles[r+1][i+1], circles[r+1][i]])
 
+
 def addTitle():
     # Text
     font_curve = bpy.data.curves.new(type="FONT", name="Font Curve")
     font_curve.body = trackName
     font_obj = bpy.data.objects.new(name="Font Object", object_data=font_curve)
     font_obj.data.extrude = 0.1
-    
+
     fontAng = np.pi * (duration / MAX_DURATION - 1/2)
-    font_obj.location = (np.cos(fontAng)*(R0+0.4), np.sin(fontAng)*(R0+0.1), H0+0.05)
+    font_obj.location = (np.cos(fontAng)*(R0+0.8),
+                         np.sin(fontAng)*(R0+0.8), H0+0.05)
     font_obj.rotation_euler = (0, 0, fontAng)
 
-    
     bpy.context.scene.collection.objects.link(font_obj)
+
+
+def edgeDecor(bm):
+    # For valence
+    startAng = 2*np.pi * duration / MAX_DURATION
+    
+    decorNum = int((1 - duration / MAX_DURATION) * 40)
+    
+    decL = np.linspace(startAng, 2*np.pi, decorNum+1, endpoint=True)
+
+    N = 32
+
+    amp = R2-R1
+
+    verts_u = []
+    verts_d = []
+
+    for i in range(decorNum):
+        theta1 = decL[i]
+        theta2 = decL[i+1]
+        for j in np.linspace(theta1, theta2, N):
+            x = 2*(j-theta1)/(theta2-theta1)
+            if x > 1:
+                x = 2 - x
+            f = x ** ((1-valence) * 2)
+            r = R1+amp*f
+
+            j += np.pi/2
+            print(bmesh.ops.create_vert(
+                bm, co=[r*np.cos(j), r*np.sin(j), 0]))
+            verts_d.append(bmesh.ops.create_vert(
+                bm, co=[r*np.cos(j), r*np.sin(j), 0])['vert'][0])
+            verts_u.append(bmesh.ops.create_vert(
+                bm, co=[r*np.cos(j), r*np.sin(j), H1])['vert'][0])
+
+    central_d = bmesh.ops.create_vert(bm, co=[0, 0, 0])['vert'][0]
+    central_u = bmesh.ops.create_vert(bm, co=[0, 0, H1])['vert'][0]
+
+    for i in range(len(verts_u)-1):
+        bm.faces.new([verts_u[i], verts_u[i+1], central_u])
+        bm.faces.new([verts_d[i], verts_d[i+1], central_d])
+        bm.faces.new([verts_u[i], verts_u[i+1], verts_d[i+1], verts_d[i]])
 
 
 if __name__ == '__main__':
@@ -222,6 +268,8 @@ if __name__ == '__main__':
     disk(bm, ring0_d, ring0_u, ring1_d, ring1_u)
 
     waves(bm)
+
+    edgeDecor(bm)
 
     # for f in bm.faces:
     #     f.smooth = True
