@@ -9,7 +9,7 @@ MAX_DURATION = 360000
 
 SEG_COUNT = 64
 
-R0 = 0.5
+R0 = 0.2
 R1 = 4.0
 R2 = R1 + 0.2
 
@@ -19,9 +19,9 @@ H1 = 0.2
 rStep = 6
 
 loudness = -4.843 # [-10, 0]
-tempo = 100
-duration = 249627 # < MAX_DURATION
-energy = 0.8 # [0, 1]
+tempo = 180
+duration = 189627 # < MAX_DURATION
+energy = 0.6 # [0, 1]
 valence = 0.567 # Not used now
 danceability = 0.617 # Not used now
 trackName = 'Track'
@@ -84,7 +84,7 @@ def waves(bm):
         for j in range(pointCnt):
             HList[i, j] = baseH + (np.random.random() - 0.5) * maxAmp
 
-    rList = np.linspace(R0+0.1, R1-0.2, rStep)
+    rList = np.linspace(R0+0.8, R1-0.2, rStep)
     fan = int(np.floor(pointCnt * (duration / MAX_DURATION)))
 
     print(fan, duration / MAX_DURATION)
