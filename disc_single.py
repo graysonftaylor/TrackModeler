@@ -73,8 +73,6 @@ def waves(bm):
 
     thetaList = np.linspace(0, maxAng, pointCnt)
 
-    print(pointCnt)
-
     HList = np.zeros((rStep, pointCnt))
 
     # Energy - Amplifier of height
@@ -87,8 +85,6 @@ def waves(bm):
 
     rList = np.linspace(R0+0.8, R1-0.2, rStep)
     fan = int(np.floor(pointCnt * (duration / MAX_DURATION)))
-
-    print(fan, duration / MAX_DURATION)
 
     baseCircles = []
 
@@ -214,8 +210,7 @@ def edgeDecor(bm):
             r = R1+amp*f
 
             j += np.pi/2
-            print(bmesh.ops.create_vert(
-                bm, co=[r*np.cos(j), r*np.sin(j), 0]))
+
             verts_d.append(bmesh.ops.create_vert(
                 bm, co=[r*np.cos(j), r*np.sin(j), 0])['vert'][0])
             verts_u.append(bmesh.ops.create_vert(
