@@ -9,7 +9,7 @@ MAX_DURATION = 360000
 
 SEG_COUNT = 64
 
-R0 = 0.2
+R0 = 0.4
 R1 = 4.0
 R2 = R1 + 0.2
 
@@ -19,7 +19,7 @@ H1 = 0.2
 rStep = 6
 
 loudness = -4.843  # [-10, 0], for wave base
-tempo = 180 # [90, 360], for wave freq
+tempo = 180  # [90, 360], for wave freq
 duration = 200000  # < MAX_DURATION, for outer ring
 energy = 0.6  # [0, 1], for wave amps
 valence = 0.3  # For edge decoration
@@ -66,12 +66,10 @@ def disk(bm, ring0_d, ring0_u, ring1_d, ring1_u):
                  ring1_d[0], ring1_d[SEG_COUNT-1]])
 
 
-def waves(bm):
-    maxAng = 2*np.pi * duration / MAX_DURATION
+def waves():
+    bm = bmesh.new()
 
     pointCnt = int(np.ceil(tempo / 8))
-
-    thetaList = np.linspace(0, maxAng, pointCnt)
 
     HList = np.zeros((rStep, pointCnt))
 
@@ -85,6 +83,8 @@ def waves(bm):
 
     rList = np.linspace(R0+0.8, R1-0.2, rStep)
     fan = int(np.floor(pointCnt * (duration / MAX_DURATION)))
+
+    print(fan, duration / MAX_DURATION)
 
     baseCircles = []
 
@@ -107,20 +107,28 @@ def waves(bm):
         for j in range(fan+1):
             bmesh.ops.translate(
                 bm, verts=[tCircle[j]], vec=(0, 0, HList[i, j]))
-        # bmesh.ops.smooth_laplacian_vert(bm, verts=tCircle)
         circles.append(tCircle)
 
+    # Up and Down face
     for r in range(rStep-1):
         for i in range(fan):
             bm.faces.new([circles[r][i], circles[r][i+1],
                          circles[r+1][i+1], circles[r+1][i]])
+            bm.faces.new([baseCircles[r][i], baseCircles[r][i+1],
+                         baseCircles[r+1][i+1], baseCircles[r+1][i]])
 
+    for i in range(fan):
+        bm.faces.new([baseCircles[rStep-1][i], baseCircles[rStep-1][i+1],
+                      baseCircleOut[i+1], baseCircleOut[i]])
+
+    # Inner and Outer face
     for i in range(fan):
         bm.faces.new([circles[0][i], circles[0][i+1],
                       baseCircles[0][i+1], baseCircles[0][i]])
         bm.faces.new([circles[rStep-1][i], circles[rStep-1][i+1],
                       baseCircleOut[i+1], baseCircleOut[i]])
 
+    # Two Ends
     for i in range(rStep-1):
         bm.faces.new([circles[i][0], circles[i+1][0],
                       baseCircles[i+1][0], baseCircles[i][0]])
@@ -131,49 +139,19 @@ def waves(bm):
     bm.faces.new([circles[rStep-1][fan], baseCircleOut[fan],
                  baseCircles[rStep-1][fan]])
 
+    me = bpy.data.meshes.new("Wave Mesh")
+    bm.to_mesh(me)
+    bm.free()
 
-def waves2(bm):
-    maxAng = 2*np.pi * duration / MAX_DURATION
-
-    pointCnt = int(np.floor(tempo / 8))
-
-    thetaList = np.linspace(0, maxAng, pointCnt)
-
-    HList = np.zeros((rStep, pointCnt))
-
-    # Energy - Amplifier of height
-    baseH = H1 + (loudness + 10) / 30
-    maxAmp = energy / 4
-
-    for i in range(rStep):
-        for j in range(pointCnt):
-            HList[i, j] = baseH + (np.random.random() - 0.5) * maxAmp
-
-    rList = np.linspace(R0+0.1, R1-0.2, rStep)
-    fan = int(pointCnt * (duration / MAX_DURATION))
-
-    circles = []
-
-    for i in range(rStep):
-        tCircle = bmesh.ops.create_circle(
-            bm, segments=pointCnt, radius=rList[i])['verts'][:fan]
-        for j in range(fan):
-            bmesh.ops.translate(
-                bm, verts=[tCircle[j]], vec=(0, 0, HList[i, j]))
-        # bmesh.ops.smooth_laplacian_vert(bm, verts=tCircle)
-        circles.append(tCircle)
-
-    for r in range(rStep-1):
-        for i in range(fan-1):
-            bm.faces.new([circles[r][i], circles[r][i+1],
-                         circles[r+1][i+1], circles[r+1][i]])
+    obj = bpy.data.objects.new("Wave", me)
+    bpy.context.collection.objects.link(obj)
 
 
 def addTitle():
     # Text
     font_curve = bpy.data.curves.new(type="FONT", name="Font Curve")
     font_curve.body = trackName
-    font_obj = bpy.data.objects.new(name="Font Object", object_data=font_curve)
+    font_obj = bpy.data.objects.new(name="Track Title", object_data=font_curve)
     font_obj.data.extrude = 0.1
 
     fontAng = np.pi * (duration / MAX_DURATION - 1/2)
@@ -184,12 +162,15 @@ def addTitle():
     bpy.context.scene.collection.objects.link(font_obj)
 
 
-def edgeDecor(bm):
+def edgeDecor():
+
+    bm = bmesh.new()
+
     # For valence
     startAng = 2*np.pi * duration / MAX_DURATION
-    
+
     decorNum = int((1 - duration / MAX_DURATION) * 40)
-    
+
     decL = np.linspace(startAng, 2*np.pi, decorNum+1, endpoint=True)
 
     N = 32
@@ -198,6 +179,8 @@ def edgeDecor(bm):
 
     verts_u = []
     verts_d = []
+    cent_verts_u = []
+    cent_verts_d = []
 
     for i in range(decorNum):
         theta1 = decL[i]
@@ -216,13 +199,33 @@ def edgeDecor(bm):
             verts_u.append(bmesh.ops.create_vert(
                 bm, co=[r*np.cos(j), r*np.sin(j), H1])['vert'][0])
 
-    central_d = bmesh.ops.create_vert(bm, co=[0, 0, 0])['vert'][0]
-    central_u = bmesh.ops.create_vert(bm, co=[0, 0, H1])['vert'][0]
+            cent_verts_d.append(bmesh.ops.create_vert(
+                bm, co=[R0*np.cos(j), R0*np.sin(j), 0])['vert'][0])
+            cent_verts_u.append(bmesh.ops.create_vert(
+                bm, co=[R0*np.cos(j), R0*np.sin(j), H1])['vert'][0])
 
-    for i in range(len(verts_u)-1):
-        bm.faces.new([verts_u[i], verts_u[i+1], central_u])
-        bm.faces.new([verts_d[i], verts_d[i+1], central_d])
+    L = len(verts_u)
+    for i in range(L-1):
+        bm.faces.new([verts_u[i], verts_u[i+1],
+                     cent_verts_u[i+1], cent_verts_u[i]])
+        bm.faces.new([verts_d[i], verts_d[i+1],
+                     cent_verts_d[i+1], cent_verts_d[i]])
+
+        bm.faces.new([cent_verts_u[i], cent_verts_u[i+1],
+                     cent_verts_d[i+1], cent_verts_d[i]])
         bm.faces.new([verts_u[i], verts_u[i+1], verts_d[i+1], verts_d[i]])
+
+    bm.faces.new([verts_u[0], verts_d[0],
+                  cent_verts_d[0], cent_verts_u[0]])
+    bm.faces.new([verts_u[L-1], verts_d[L-1],
+                  cent_verts_d[L-1], cent_verts_u[L-1]])
+
+    me = bpy.data.meshes.new("Edge Decoration Mesh")
+    bm.to_mesh(me)
+    bm.free()
+
+    obj = bpy.data.objects.new("Edge Decoration", me)
+    bpy.context.collection.objects.link(obj)
 
 
 if __name__ == '__main__':
@@ -262,18 +265,15 @@ if __name__ == '__main__':
 
     disk(bm, ring0_d, ring0_u, ring1_d, ring1_u)
 
-    waves(bm)
-
-    edgeDecor(bm)
-
-    # for f in bm.faces:
-    #     f.smooth = True
-
-    me = bpy.data.meshes.new("Mesh")
+    me = bpy.data.meshes.new("Disk Mesh")
     bm.to_mesh(me)
     bm.free()
 
-    obj = bpy.data.objects.new("Object", me)
+    obj = bpy.data.objects.new("Disk", me)
     bpy.context.collection.objects.link(obj)
+
+    waves()
+
+    edgeDecor()
 
     addTitle()
