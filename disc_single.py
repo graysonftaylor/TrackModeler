@@ -36,8 +36,9 @@ def outerRing():
     # Loudness - outer ring height
 
     if loudness < -10:
-        loudness = -10
-    H2 = H1 + (loudness + 10) / 40
+        H2 = H1
+    else:
+        H2 = H1 + (loudness + 10) / 40
 
     # For outer ring
     ring1_d = bmesh.ops.create_circle(
