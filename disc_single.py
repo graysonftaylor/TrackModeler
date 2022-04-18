@@ -28,13 +28,32 @@ danceability = 0.617  # Not used now
 trackName = 'Track'
 
 
-def outerRing(bm, ring1_d, ring1_u, ring2_d, ring2_u):
+def outerRing():
     # Outer circle: Duration
 
+    bm = bmesh.new()
+
+    # Loudness - outer ring height
+
+    if loudness < -10:
+        loudness = -10
+    H2 = H1 + (loudness + 10) / 40
+
+    # For outer ring
+    ring1_d = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R1)['verts']
+    ring1_u = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R1)['verts']
+    bmesh.ops.translate(bm, verts=ring1_u, vec=(0, 0, H2))  # H2
+
+    ring2_d = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R2)['verts']
+    ring2_u = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R2)['verts']
+    bmesh.ops.translate(bm, verts=ring2_u, vec=(0, 0, H2))
+
     seg = int(np.floor((duration / MAX_DURATION) * SEG_COUNT)) + 1
-
-    print(seg)
-
+    
     for i in range(seg):
         bm.faces.new([ring1_d[i], ring1_d[i+1], ring2_d[i+1], ring2_d[i]])
         bm.faces.new([ring1_u[i], ring1_u[i+1], ring2_u[i+1], ring2_u[i]])
@@ -46,8 +65,29 @@ def outerRing(bm, ring1_d, ring1_u, ring2_d, ring2_u):
     bm.faces.new([ring1_u[seg], ring2_u[seg],
                  ring2_d[seg], ring1_d[seg]])
 
+    me = bpy.data.meshes.new("Ring Mesh")
+    bm.to_mesh(me)
+    bm.free()
 
-def disk(bm, ring0_d, ring0_u, ring1_d, ring1_u):
+    obj = bpy.data.objects.new("Ring", me)
+    bpy.context.collection.objects.link(obj)
+
+
+def disk():
+    bm = bmesh.new()
+
+    ring0_d = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R0)['verts']
+    ring0_u = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R0)['verts']
+    bmesh.ops.translate(bm, verts=ring0_u, vec=(0, 0, H0))
+
+    ring1_d = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R1)['verts']
+    ring1_u = bmesh.ops.create_circle(
+        bm, segments=SEG_COUNT, radius=R1)['verts']
+    bmesh.ops.translate(bm, verts=ring1_u, vec=(0, 0, H1))
+
     for i in range(SEG_COUNT-1):
         bm.faces.new([ring0_d[i], ring0_d[i+1], ring1_d[i+1], ring1_d[i]])
         bm.faces.new([ring0_u[i], ring0_u[i+1], ring1_u[i+1], ring1_u[i]])
@@ -64,6 +104,13 @@ def disk(bm, ring0_d, ring0_u, ring1_d, ring1_u):
                  ring0_d[0], ring0_d[SEG_COUNT-1]])
     bm.faces.new([ring1_u[SEG_COUNT-1], ring1_u[0],
                  ring1_d[0], ring1_d[SEG_COUNT-1]])
+
+    me = bpy.data.meshes.new("Disk Mesh")
+    bm.to_mesh(me)
+    bm.free()
+
+    obj = bpy.data.objects.new("Disk", me)
+    bpy.context.collection.objects.link(obj)
 
 
 def waves():
@@ -232,45 +279,9 @@ if __name__ == '__main__':
 
     bm = bmesh.new()
 
-    ring0_d = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R0)['verts']
-    ring0_u = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R0)['verts']
-    bmesh.ops.translate(bm, verts=ring0_u, vec=(0, 0, H0))
+    outerRing()
 
-    ring1_d = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R1)['verts']
-    ring1_u = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R1)['verts']
-    bmesh.ops.translate(bm, verts=ring1_u, vec=(0, 0, H1))
-
-    # Loudness - outer ring height
-
-    if loudness < -10:
-        loudness = -10
-    H2 = H1 + (loudness + 10) / 40
-
-    # For outer ring
-    ring1_u2 = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R1)['verts']
-    bmesh.ops.translate(bm, verts=ring1_u2, vec=(0, 0, H2))  # H2
-
-    ring2_d = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R2)['verts']
-    ring2_u = bmesh.ops.create_circle(
-        bm, segments=SEG_COUNT, radius=R2)['verts']
-    bmesh.ops.translate(bm, verts=ring2_u, vec=(0, 0, H2))
-
-    outerRing(bm, ring1_d, ring1_u2, ring2_d, ring2_u)
-
-    disk(bm, ring0_d, ring0_u, ring1_d, ring1_u)
-
-    me = bpy.data.meshes.new("Disk Mesh")
-    bm.to_mesh(me)
-    bm.free()
-
-    obj = bpy.data.objects.new("Disk", me)
-    bpy.context.collection.objects.link(obj)
+    disk()
 
     waves()
 
