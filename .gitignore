@@ -1,4 +1,3 @@
-*.txt
 *.cache
 *.csv
 /__pycache__
