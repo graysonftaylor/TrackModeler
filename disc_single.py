@@ -18,14 +18,14 @@ H1 = 0.2
 
 rStep = 6
 
-loudness = -4.843  # [-10, 0], for wave base
-tempo = 180  # [90, 360], for wave freq
-duration = 200000  # < MAX_DURATION, for outer ring
-energy = 0.6  # [0, 1], for wave amps
-valence = 0.3  # For edge decoration
+loudness = -3.374  # [-10, 0], for wave base
+tempo = 126.975  # [90, 360], for wave freq
+duration = 269413  # < MAX_DURATION, for outer ring
+energy = 0.866  # [0, 1], for wave amps
+valence = 0.928  # For edge decoration
 
 danceability = 0.617  # Not used now
-trackName = 'Track'
+trackName = 'MILABO'
 
 
 def outerRing():
@@ -54,7 +54,7 @@ def outerRing():
     bmesh.ops.translate(bm, verts=ring2_u, vec=(0, 0, H2))
 
     seg = int(np.floor((duration / MAX_DURATION) * SEG_COUNT)) + 1
-    
+
     for i in range(seg):
         bm.faces.new([ring1_d[i], ring1_d[i+1], ring2_d[i+1], ring2_d[i]])
         bm.faces.new([ring1_u[i], ring1_u[i+1], ring2_u[i+1], ring2_u[i]])
@@ -122,12 +122,12 @@ def waves():
     HList = np.zeros((rStep, pointCnt))
 
     # Energy - Amplifier of height
-    baseH = H1 + (loudness + 10) / 20
+    baseH = H1 + (loudness + 10) / 40
     maxAmp = energy / 2
 
     for i in range(rStep):
         for j in range(pointCnt):
-            HList[i, j] = baseH + (np.random.random() - 0.5) * maxAmp
+            HList[i, j] = baseH + (np.random.random()) * maxAmp
 
     rList = np.linspace(R0+0.8, R1-0.2, rStep)
     fan = int(np.floor(pointCnt * (duration / MAX_DURATION)))
@@ -206,6 +206,7 @@ def addTitle():
     font_obj.location = (np.cos(fontAng)*(R0+0.8),
                          np.sin(fontAng)*(R0+0.8), H0+0.05)
     font_obj.rotation_euler = (0, 0, fontAng)
+    font_obj.scale = (0.5, 0.5, 0.5)
 
     bpy.context.scene.collection.objects.link(font_obj)
 
